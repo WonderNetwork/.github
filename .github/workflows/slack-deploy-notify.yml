@@ -22,7 +22,8 @@ on:
       run_id:
         description: Deploy workflow run ID from GitHub Actions
         required: true
-        type: number
+        # lol yaml
+        type: string
       commit_sha:
         description: SHA for the deployed Git commit
         required: true
