@@ -1,0 +1,124 @@
+name: Notify Slack on deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: Deploy environment
+        required: true
+        type: string
+      actor:
+        description: Slack username of the person who initiated the deploy
+        required: true
+        type: string
+      repository:
+        description: GitHub repository name (<org>/<project>)
+        required: true
+        type: string
+      result:
+        description: Result of the deploy. 'success' is happy; anything else is sad
+        required: true
+        type: string
+      run_id:
+        description: Deploy workflow run ID from GitHub Actions
+        required: true
+        type: number
+      commit_sha:
+        description: SHA for the deployed Git commit
+        required: true
+        type: string
+      ref:
+        description: Branch or tag name that was deployed
+        required: true
+        type: string
+    secrets:
+      slack_webhook:
+        required: true
+
+jobs:
+    slack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: set up happy status
+        if: ${{ inputs.result == 'success' }}
+        run: |
+          echo "status_emoji=yey" >> $GITHUB_ENV
+          echo "status_color=06B594" >> $GITHUB_ENV
+
+      - name: set up sad status
+        if: ${{ inputs.result != 'success' }}
+        run: |
+          echo "status_emoji=poop" >> $GITHUB_ENV
+          echo "status_color=EA7363" >> $GITHUB_ENV
+
+      - name: shorten the commit hash
+        run: |
+          sha=${{ inputs.commit_sha }}
+          echo "short_commit=${sha:0:16}" >> $GITHUB_ENV
+
+      - name: send the deploy result to slack
+        continue-on-error: true
+        env:
+          slack_webhook: ${{ secrets.slack_webhook }}
+          link: https://github.com/${{ inputs.repository }}
+        run: |
+          curl ${{ env.slack_webhook }} \
+            --request POST \
+            --header 'Content-type: application/json' \
+            --data '{
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Deploy: ${{ inputs.repository }}"
+                  }
+                },
+                {
+                  "type": "divider"
+                }
+              ],
+              "attachments": [
+                {
+                  "color": "#${{ env.status_color }}",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Status*\n:${{ env.status_emoji }}: <${{ env.link }}/actions/runs/${{ inputs.run_id }}|${{ inputs.result }}>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Environment*\n${{ inputs.environment }}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Branch/tag*\n<${{ env.link }}/tree/${{ inputs.ref }}|`${{ inputs.ref }}`>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Commit*\n<${{ env.link }}/commits/${{ inputs.commit_sha }}|`${{ env.short_commit }}`>"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Initiated by*\n@${{ inputs.actor }}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+          }'
