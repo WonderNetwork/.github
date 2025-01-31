@@ -72,7 +72,7 @@ jobs:
                           },
                           {
                             "type": "mrkdwn",
-                            "text": "*Environment*\n${{ github.event.inputs.environment }}"
+                            "text": "*Environment*\n${{ inputs.environment || github.event.inputs.environment || 'production' }}"
                           }
                         ]
                       },
@@ -94,7 +94,7 @@ jobs:
                         "fields": [
                           {
                             "type": "mrkdwn",
-                            "text": "*Initiated by*\n@${{ github.event.inputs.actor || 'GitHub' }}"
+                            "text": "*Initiated by*\n@${{ github.event.inputs.actor || inputs.actor || 'GitHub' }}"
                           }
                         ]
                       }
