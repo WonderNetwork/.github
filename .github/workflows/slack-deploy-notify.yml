@@ -11,6 +11,11 @@ on:
         description: SHA for the deployed Git commit
         required: true
         type: string
+      actor:
+        description: Slack username of the initiating user
+        type: string
+        required: false
+        default: 'GitHub'
     secrets:
       slack_webhook:
         required: true
