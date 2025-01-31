@@ -11,11 +11,6 @@ on:
         description: SHA for the deployed Git commit
         required: true
         type: string
-      actor:
-        description: Slack username of the initiating user
-        type: string
-        required: false
-        default: 'GitHub'
     secrets:
       slack_webhook:
         required: true
@@ -99,7 +94,7 @@ jobs:
                         "fields": [
                           {
                             "type": "mrkdwn",
-                            "text": "*Initiated by*\n@${{ github.event.inputs.actor }}"
+                            "text": "*Initiated by*\n@${{ github.event.inputs.actor || 'GitHub' }}"
                           }
                         ]
                       }
