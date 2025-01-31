@@ -94,7 +94,7 @@ jobs:
                         "fields": [
                           {
                             "type": "mrkdwn",
-                            "text": "*Initiated by*\n@${{ github.event.inputs.actor }}"
+                            "text": "*Initiated by*\n@${{ github.event.inputs.actor || 'GitHub' }}"
                           }
                         ]
                       }
