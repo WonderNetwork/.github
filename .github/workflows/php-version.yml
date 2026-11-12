@@ -14,7 +14,8 @@ on:
         value: ${{ jobs.version.outputs.image }}
 
 jobs:
-  run:
+  version:
+    name: Determine PHP version
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -46,4 +47,4 @@ jobs:
             echo "version_short=$version_short" 
             echo "version=$platform_req"
             echo "image=ghcr.io/wondernetwork/web-php$version_short"
-          } > "$GITHUB_OUTPUT"
+          } | tee "$GITHUB_OUTPUT"
