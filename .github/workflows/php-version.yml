@@ -9,6 +9,9 @@ on:
       version:
         description: minor.major version, eg. 8.5
         value: ${{ jobs.version.outputs.version }}
+      image:
+        description: docker image to run this PHP version
+        value: ${{ jobs.version.outputs.image }}
 
 jobs:
   run:
@@ -16,6 +19,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_short: ${{ steps.version.outputs.version_short }}
+      image: ${{ steps.version.outputs.image }}
 
     steps:
       - name: Checkout code
@@ -35,7 +39,11 @@ jobs:
             echo "There is no PHP requirement defined in composer.lock" >&2
             exit 1
           fi
+
+          version_short="$(jq -r '. * 10')"
+
           {
-            echo "$platform_req" | jq -r '"version_short="+(.*10|tostring)'
-            echo "$platform_req" | jq -r '"version="+(.|tostring)'
+            echo "version_short=$version_short" 
+            echo "version=$platform_req"
+            echo "image=ghcr.io/wondernetwork/web-php$version_short"
           } > "$GITHUB_OUTPUT"
