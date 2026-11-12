@@ -40,7 +40,7 @@ jobs:
             exit 1
           fi
 
-          version_short="$(jq -r '. * 10')"
+          version_short="$(echo "$platform_req" | jq -r '. * 10')"
 
           {
             echo "version_short=$version_short" 
