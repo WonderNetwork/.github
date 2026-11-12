@@ -25,7 +25,7 @@ on:
         description: If the build is fresh
         value: ${{ jobs.artifact.outputs.success }}
     secrets:
-      GITHUB_TOKEN:
+      token:
         required: true
 
 jobs:
@@ -62,7 +62,7 @@ jobs:
       - name: verify the artifact exists
         id: verify
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.token }}
           REPO: ${{ github.repository }}
           ARTIFACT_NAME: dist-${{ inputs.sha || github.sha }}
         run: |
