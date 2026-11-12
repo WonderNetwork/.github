@@ -1,0 +1,76 @@
+name: Wait for the build
+
+on:
+  workflow_call:
+    inputs:
+      sha:
+        default: defaults to current workflow sha
+        type: string
+        required: false
+      build:
+        description: Job to monitor
+        default: build
+        type: string
+        required: false
+      build_timeout:
+        default: 5
+        type: number
+        required: false
+      wait_interval:
+        default: 10
+        type: number
+        required: false
+    outputs:
+      success:
+        description: If the build is fresh
+        value: ${{ jobs.artifact.outputs.success }}
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+
+jobs:
+  wait:
+    name: Wait for the build
+    runs-on: ubuntu-latest
+    outputs:
+      # make the result of the build available to the rebuild job
+      outcome: ${{ steps.wait.outcome }}
+    steps:
+      - name: wait for the build
+        # don't fail the whole workflow if this build fails
+        continue-on-error: true
+        id: wait
+        timeout-minutes: ${{ inputs.build_timeout }}
+        # https://github.com/lewagon/wait-on-check-action
+        uses: lewagon/wait-on-check-action@v1.9.1
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+          check-name: ${{ inputs.build }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: ${{ inputs.wait_interval }}
+          allowed-conclusions: success
+          verbose: true
+
+  artifact:
+    runs-on: ubuntu-latest
+    name: verify the artifact exists
+    needs: wait
+    if: ${{ needs.wait.outputs.outcome == 'success' }}
+    outputs:
+      success: ${{ steps.verify.outputs.success }}
+    steps:
+      - name: verify the artifact exists
+        id: verify
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ARTIFACT_NAME: dist-${{ inputs.sha || github.sha }}
+        run: |
+          count=$(gh api "/repos/$REPO/actions/artifacts" |
+            jq --arg name "$ARTIFACT_NAME" \
+              '.artifacts|map(select(.name==$name))|length'
+          )
+          
+          if [ "$count" -gt 0 ]; then
+            echo "success=true" > "$GITHUB_OUTPUT" 
+          fi
