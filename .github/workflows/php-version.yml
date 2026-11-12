@@ -1,0 +1,41 @@
+name: Determine PHP version
+
+on:
+  workflow_call:
+    outputs:
+      version_short:
+        description: Short version, eg 85
+        value: ${{ jobs.version.outputs.version_short }}
+      version:
+        description: minor.major version, eg. 8.5
+        value: ${{ jobs.version.outputs.version }}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version_short: ${{ steps.version.outputs.version_short }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Determine required PHP version
+        id: version
+        run: |
+          if [ ! -f "composer.lock" ]; then
+            echo "composer.lock not found" >&2
+            exit 1
+          fi
+          
+          platform_req="$(jq -r '.platform.php[2:]//""' < composer.lock)"
+          
+          if [ -z "$platform_req" ]; then
+            echo "There is no PHP requirement defined in composer.lock" >&2
+            exit 1
+          fi
+          {
+            echo "$platform_req" | jq -r '"version_short="+(.*10|tostring)'
+            echo "$platform_req" | jq -r '"version="+(.|tostring)'
+          } > "$GITHUB_OUTPUT"
