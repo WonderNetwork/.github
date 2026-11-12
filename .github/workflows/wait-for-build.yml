@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       sha:
-        default: defaults to current workflow sha
+        description: defaults to current workflow sha
         type: string
         required: false
       build:
