@@ -85,7 +85,7 @@ jobs:
                           },
                           {
                             "type": "mrkdwn",
-                            "text": "*Commit*\n<${{ env.link }}/commits/${{ inputs.commit_sha }}|`${{ env.short_commit }}`>"
+                            "text": "*Commit*\n<${{ env.link }}/commit/${{ inputs.commit_sha }}|`${{ env.short_commit }}`>"
                           }
                         ]
                       },
