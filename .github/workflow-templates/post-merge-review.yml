@@ -1,0 +1,13 @@
+name: Post-merge review
+
+on:
+  pull_request:
+    types: [ "closed" ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  post-merge-review:
+    uses: "WonderNetwork/.github/.github/workflows/post-merge-review.yml@main"

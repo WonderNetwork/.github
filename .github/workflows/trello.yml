@@ -1,0 +1,17 @@
+name: Link to Trello
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  trello:
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: mlebkowski/attach-github-pr-to-trello-card-action@1.2.1
+        with:
+          trello-api-key: ${{ vars.TRELLO_API_KEY }}
+          trello-token: ${{ secrets.TRELLO_TOKEN }}

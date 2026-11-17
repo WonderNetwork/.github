@@ -1,0 +1,12 @@
+name: Link to Trello
+
+on:
+  pull_request:
+    types: [ "opened", "edited" ]
+
+permissions:
+  contents: read
+
+jobs:
+  trello:
+    uses: "WonderNetwork/.github/.github/workflows/trello.yml@main"

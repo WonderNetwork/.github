@@ -1,0 +1,5 @@
+{
+    "name": "Claude review",
+    "description": "Calls claude to review changes",
+    "icon": "octoicon code-review"
+}

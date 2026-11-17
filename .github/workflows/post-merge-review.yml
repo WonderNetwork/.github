@@ -1,0 +1,80 @@
+name: Post-merge review
+
+on:
+  workflow_call:
+    inputs:
+      trello_board:
+        required: false
+        type: string
+        default: Pky7z93m
+      trello_list:
+        required: false
+        type: string
+        default: Ready
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  post-merge-review:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for an approving review
+        id: reviews
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews" |
+            jq -r 'map(select(.state == "APPROVED")) | length' |
+            tee >(sed 1s/^/approvals=/ > "$GITHUB_OUTPUT") |
+            sed '1s/^/Approving reviews: /'
+
+      - name: Create Trello card
+        if: steps.reviews.outputs.approvals == '0'
+        env:
+          TRELLO_KEY: ${{ vars.TRELLO_API_KEY }}
+          TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}
+          TRELLO_BOARD: ${{ inputs.trello_board }}
+          TRELLO_LIST: ${{ inputs.trello_list }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          MERGED_BY: ${{ github.event.pull_request.merged_by.login }}
+          MERGED_AT: ${{ github.event.pull_request.merged_at }}
+        run: |
+          set -euo pipefail
+
+          list_id=$(curl -fsS "https://api.trello.com/1/boards/$TRELLO_BOARD/lists?key=$TRELLO_KEY&token=$TRELLO_TOKEN" \
+            | jq -r --arg name "$TRELLO_LIST" '[.[] | select((.name | ascii_downcase) == ($name | ascii_downcase))][0].id // empty')
+          if [ -z "$list_id" ]; then
+            echo "::error::Trello list '$TRELLO_LIST' not found on board $TRELLO_BOARD"
+            exit 1
+          fi
+
+          desc=$(cat <<EOF
+          $PR_URL was merged into the default branch of \`$REPO\` without an approving review (ruleset bypass).
+
+          - PR: #$PR_NUMBER "$PR_TITLE"
+          - Author: $PR_AUTHOR
+          - Merged by: $MERGED_BY at $MERGED_AT
+
+          EOF
+          )
+
+          curl -fsS -X POST "https://api.trello.com/1/cards" \
+            --data-urlencode "key=$TRELLO_KEY" \
+            --data-urlencode "token=$TRELLO_TOKEN" \
+            --data-urlencode "idList=$list_id" \
+            --data-urlencode "name=Post-merge review: $REPO#$PR_NUMBER $PR_TITLE" \
+            --data-urlencode "desc=$desc" \
+            --data-urlencode "urlSource=$PR_URL" \
+            -o /dev/null
+          echo "Created Trello card for $REPO#$PR_NUMBER"

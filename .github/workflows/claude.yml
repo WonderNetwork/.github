@@ -1,0 +1,41 @@
+name: Claude Code
+
+on:
+  workflow_call:
+    inputs:
+      prompt:
+        required: false
+        type: string
+        default: >-
+          Review the proposed pull request.
+          Read REVIEW.md in the repository root first and follow it exactly;
+          it defines the tone, format and scope of the review.
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+  actions: read
+
+jobs:
+  claude:
+    if: |
+      (github.event_name == 'pull_request' && !github.event.pull_request.draft && github.actor != 'dependabot[bot]') ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          track_progress: true
+          claude_args: '--model claude-sonnet-5'
+          prompt: ${{ inputs.prompt }}

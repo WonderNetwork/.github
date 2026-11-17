@@ -1,0 +1,5 @@
+{
+    "name": "Post-merge review",
+    "description": "Tracks hotfix merges w/o approvals and creates Trello cards to finish the reviews",
+    "iconName": "octoicon git-merge"
+}
